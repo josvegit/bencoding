@@ -3,6 +3,7 @@ package bencoding
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 )
 
@@ -45,7 +46,44 @@ func marshalint(integer int) ([]byte, error) {
 }
 
 func marshaldict(dict map[string]interface{}) ([]byte, error) {
-	return nil, nil
+	res := []byte{}
+	res = append(res, 'd')
+
+	keys := []string{}
+	for k, _ := range dict {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		val := dict[key]
+		bs, err := marshalstr(key)
+		if err != nil {
+			return nil, err
+		}
+
+		res = append(res, bs...)
+
+		switch t := val.(type) {
+		case string:
+			bs, err = marshalstr(t)
+		case int:
+			bs, err = marshalint(t)
+		case []interface{}:
+			bs, err = marshallist(t)
+		case map[string]interface{}:
+			bs, err = marshaldict(t)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		res = append(res, bs...)
+	}
+
+	res = append(res, 'e')
+
+	return res, nil
 }
 
 func marshallist(list []interface{}) ([]byte, error) {
