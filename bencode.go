@@ -50,7 +50,7 @@ func marshaldict(dict map[string]interface{}) ([]byte, error) {
 	res = append(res, 'd')
 
 	keys := []string{}
-	for k, _ := range dict {
+	for k := range dict {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
