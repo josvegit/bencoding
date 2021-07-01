@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"sort"
 	"strconv"
 )
@@ -18,6 +19,13 @@ func UnMarshal(src interface{}, dst interface{}) error {
 		break
 	default:
 		return errors.New("cannot unmarshal invalid src")
+	}
+	if dst == nil {
+		return errors.New("nil dst")
+	}
+
+	if reflect.TypeOf(dst).Kind() != reflect.Ptr {
+		return errors.New("non pointer dst")
 	}
 
 	return nil
