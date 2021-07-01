@@ -3,9 +3,21 @@ package bencoding
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"sort"
 	"strconv"
 )
+
+func UnMarshal(in interface{}, out interface{}) error {
+	if in == nil {
+		return errors.New("cannot umarshal into nil")
+	}
+	if reflect.ValueOf(in).Kind() != reflect.Ptr {
+		return errors.New("cannot umarshal into non pointer")
+	}
+
+	return nil
+}
 
 func Marshal(v interface{}) ([]byte, error) {
 	if v == nil {
