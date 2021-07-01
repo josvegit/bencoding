@@ -3,17 +3,21 @@ package bencoding
 import (
 	"errors"
 	"fmt"
-	"reflect"
+	"io"
 	"sort"
 	"strconv"
 )
 
-func UnMarshal(in interface{}, out interface{}) error {
-	if in == nil {
-		return errors.New("cannot umarshal into nil")
+func UnMarshal(src interface{}, dst interface{}) error {
+	if src == nil {
+		return errors.New("cannot umarshal nil src")
 	}
-	if reflect.ValueOf(in).Kind() != reflect.Ptr {
-		return errors.New("cannot umarshal into non pointer")
+
+	switch src.(type) {
+	case io.Reader, []byte:
+		break
+	default:
+		return errors.New("cannot unmarshal invalid src")
 	}
 
 	return nil
