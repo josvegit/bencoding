@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"sort"
 	"strconv"
 )
@@ -18,6 +19,8 @@ func UnMarshal(src interface{}, dst interface{}) error {
 	switch t := src.(type) {
 	case *bufio.Reader:
 		rdr = t
+	case io.Reader:
+		rdr = bufio.NewReader(t)
 	case []byte:
 		rdr = bufio.NewReader(bytes.NewReader(t))
 	default:
@@ -30,13 +33,13 @@ func UnMarshal(src interface{}, dst interface{}) error {
 	var err error
 	switch dt := dst.(type) {
 	case map[string]interface{}:
-		err = unMarshalMap(rdr, dt)
-	case []interface{}:
-		err = unMarshalSlice(rdr, dt)
+		err = readMap(rdr, dt)
+	case *[]interface{}:
+		err = readSlice(rdr, dt)
 	case *string:
-		err = unMarshalString(rdr, dt)
+		err = readString(rdr, dt)
 	case *int:
-		err = unMarshalInt(rdr, dt)
+		err = readInt(rdr, dt)
 	default:
 		return errors.New("cannot unmarshal invalid dst")
 	}
@@ -44,15 +47,62 @@ func UnMarshal(src interface{}, dst interface{}) error {
 	return err
 }
 
-func unMarshalMap(rdr *bufio.Reader, dst map[string]interface{}) error {
+func readMap(rdr *bufio.Reader, dst map[string]interface{}) error {
 	return nil
 }
 
-func unMarshalSlice(rdr *bufio.Reader, dst []interface{}) error {
-	return nil
+func readSlice(rdr *bufio.Reader, dst *[]interface{}) error {
+	fb, err := rdr.ReadByte()
+	if err != nil {
+		return err
+	}
+	if fb != 'l' {
+		return errors.New("not a bencoded list")
+	}
+
+	for {
+
+		nb, err := rdr.ReadByte()
+		if err != nil {
+			return err
+		}
+		if err := rdr.UnreadByte(); err != nil {
+			return err
+		}
+
+		switch nb {
+		case 'i':
+			var val int
+			if err := readInt(rdr, &val); err != nil {
+				return err
+			}
+			*dst = append(*dst, val)
+		case 'l':
+			var val []interface{}
+			if err := readSlice(rdr, &val); err != nil {
+				return err
+			}
+			*dst = append(*dst, val)
+		case 'd':
+			var val map[string]interface{}
+			if err := readMap(rdr, val); err != nil {
+				return err
+			}
+			*dst = append(*dst, val)
+
+		case 'e':
+			return nil
+		default:
+			var val string
+			if err := readString(rdr, &val); err != nil {
+				return err
+			}
+			*dst = append(*dst, val)
+		}
+	}
 }
 
-func unMarshalString(rdr *bufio.Reader, dst *string) error {
+func readString(rdr *bufio.Reader, dst *string) error {
 	bs, err := rdr.ReadBytes(':')
 	if err != nil {
 		return err
@@ -77,7 +127,7 @@ func unMarshalString(rdr *bufio.Reader, dst *string) error {
 	return nil
 }
 
-func unMarshalInt(rdr *bufio.Reader, dst *int) error {
+func readInt(rdr *bufio.Reader, dst *int) error {
 	fb, err := rdr.ReadByte()
 	if err != nil {
 		return err
