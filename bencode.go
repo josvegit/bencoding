@@ -48,7 +48,66 @@ func UnMarshal(src interface{}, dst interface{}) error {
 }
 
 func readMap(rdr *bufio.Reader, dst map[string]interface{}) error {
-	return nil
+	fb, err := rdr.ReadByte()
+	if err != nil {
+		return err
+	}
+	if fb != 'd' {
+		return errors.New("not a bencoded dict")
+	}
+
+	for {
+		nb, err := rdr.ReadByte()
+		if err != nil {
+			return err
+		}
+		if err := rdr.UnreadByte(); err != nil {
+			return err
+		}
+
+		if nb == 'e' {
+			return nil
+		}
+
+		var key string
+		if err := readString(rdr, &key); err != nil {
+			return err
+		}
+		nb, err = rdr.ReadByte()
+		if err != nil {
+			return err
+		}
+		if err := rdr.UnreadByte(); err != nil {
+			return err
+		}
+
+		switch nb {
+		case 'i':
+			var val int
+			if err := readInt(rdr, &val); err != nil {
+				return err
+			}
+			dst[key] = val
+		case 'l':
+			var val []interface{}
+			if err := readSlice(rdr, &val); err != nil {
+				return err
+			}
+			dst[key] = val
+		case 'd':
+			val := make(map[string]interface{})
+			if err := readMap(rdr, val); err != nil {
+				return err
+			}
+			dst[key] = val
+		default:
+			var val string
+			if err := readString(rdr, &val); err != nil {
+				return err
+			}
+			dst[key] = val
+		}
+	}
 }
 
 func readSlice(rdr *bufio.Reader, dst *[]interface{}) error {
@@ -84,7 +143,7 @@ func readSlice(rdr *bufio.Reader, dst *[]interface{}) error {
 			}
 			*dst = append(*dst, val)
 		case 'd':
-			var val map[string]interface{}
+			val := make(map[string]interface{})
 			if err := readMap(rdr, val); err != nil {
 				return err
 			}
