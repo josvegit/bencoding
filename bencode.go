@@ -1,10 +1,10 @@
 package bencoding
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
-	"io"
-	"reflect"
 	"sort"
 	"strconv"
 )
@@ -14,9 +14,12 @@ func UnMarshal(src interface{}, dst interface{}) error {
 		return errors.New("cannot umarshal nil src")
 	}
 
-	switch src.(type) {
-	case io.Reader, []byte:
-		break
+	var rdr *bufio.Reader
+	switch t := src.(type) {
+	case *bufio.Reader:
+		rdr = t
+	case []byte:
+		rdr = bufio.NewReader(bytes.NewReader(t))
 	default:
 		return errors.New("cannot unmarshal invalid src")
 	}
@@ -24,10 +27,57 @@ func UnMarshal(src interface{}, dst interface{}) error {
 		return errors.New("nil dst")
 	}
 
-	if reflect.TypeOf(dst).Kind() != reflect.Ptr {
-		return errors.New("non pointer dst")
+	var err error
+	switch dt := dst.(type) {
+	case map[string]interface{}:
+		err = unMarshalMap(rdr, dt)
+	case []interface{}:
+		err = unMarshalSlice(rdr, dt)
+	case *string:
+		err = unMarshalString(rdr, dt)
+	case *int:
+		err = unMarshalInt(rdr, dt)
+	default:
+		return errors.New("cannot unmarshal invalid dst")
 	}
 
+	return err
+}
+
+func unMarshalMap(rdr *bufio.Reader, dst map[string]interface{}) error {
+	return nil
+}
+
+func unMarshalSlice(rdr *bufio.Reader, dst []interface{}) error {
+	return nil
+}
+
+func unMarshalString(rdr *bufio.Reader, dst *string) error {
+	bs, err := rdr.ReadBytes(':')
+	if err != nil {
+		return err
+	}
+	len := len(bs)
+	strlen := string(bs[:len-1])
+
+	nr, err := strconv.Atoi(strlen)
+	if err != nil {
+		return err
+	}
+	strb := []byte{}
+	for i := 0; i < nr; i++ {
+		by, err := rdr.ReadByte()
+		if err != nil {
+			return err
+		}
+		strb = append(strb, by)
+	}
+	str := string(strb)
+	*dst = str
+	return nil
+}
+
+func unMarshalInt(rdr *bufio.Reader, dst *int) error {
 	return nil
 }
 
