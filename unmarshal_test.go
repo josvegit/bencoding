@@ -112,7 +112,7 @@ func Test_UnMarshal_Dict_Dst(t *testing.T) {
 	}
 
 	var list []interface{}
-	switch r := dst["into"].(type) {
+	switch r := dst["info"].(type) {
 	case []interface{}:
 		list = r
 	case nil:

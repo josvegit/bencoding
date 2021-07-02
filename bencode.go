@@ -61,12 +61,13 @@ func readMap(rdr *bufio.Reader, dst map[string]interface{}) error {
 		if err != nil {
 			return err
 		}
-		if err := rdr.UnreadByte(); err != nil {
-			return err
-		}
 
 		if nb == 'e' {
 			return nil
+		}
+
+		if err := rdr.UnreadByte(); err != nil {
+			return err
 		}
 
 		var key string
@@ -89,7 +90,7 @@ func readMap(rdr *bufio.Reader, dst map[string]interface{}) error {
 			}
 			dst[key] = val
 		case 'l':
-			var val []interface{}
+			val := make([]interface{}, 0)
 			if err := readSlice(rdr, &val); err != nil {
 				return err
 			}
@@ -125,6 +126,11 @@ func readSlice(rdr *bufio.Reader, dst *[]interface{}) error {
 		if err != nil {
 			return err
 		}
+
+		if nb == 'e' {
+			return nil
+		}
+
 		if err := rdr.UnreadByte(); err != nil {
 			return err
 		}
@@ -137,7 +143,7 @@ func readSlice(rdr *bufio.Reader, dst *[]interface{}) error {
 			}
 			*dst = append(*dst, val)
 		case 'l':
-			var val []interface{}
+			val := make([]interface{}, 0)
 			if err := readSlice(rdr, &val); err != nil {
 				return err
 			}
@@ -148,9 +154,6 @@ func readSlice(rdr *bufio.Reader, dst *[]interface{}) error {
 				return err
 			}
 			*dst = append(*dst, val)
-
-		case 'e':
-			return nil
 		default:
 			var val string
 			if err := readString(rdr, &val); err != nil {
