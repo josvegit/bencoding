@@ -78,6 +78,26 @@ func unMarshalString(rdr *bufio.Reader, dst *string) error {
 }
 
 func unMarshalInt(rdr *bufio.Reader, dst *int) error {
+	fb, err := rdr.ReadByte()
+	if err != nil {
+		return err
+	}
+	if fb != 'i' {
+		return errors.New("not a bencoded int")
+	}
+	bs, err := rdr.ReadBytes('e')
+	if err != nil {
+		return err
+	}
+	len := len(bs)
+	strlen := string(bs[:len-1])
+
+	nr, err := strconv.Atoi(strlen)
+	if err != nil {
+		return err
+	}
+
+	*dst = nr
 	return nil
 }
 

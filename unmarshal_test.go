@@ -35,10 +35,6 @@ func Test_UnMarshal_Invalid_Dst(t *testing.T) {
 }
 
 func Test_UnMarshal_String_Dst(t *testing.T) {
-	type test struct {
-		input interface{}
-	}
-
 	strdst := ""
 
 	if err := UnMarshal([]byte("3:cat"), &strdst); err != nil {
@@ -47,6 +43,18 @@ func Test_UnMarshal_String_Dst(t *testing.T) {
 
 	if strdst != "cat" {
 		t.Fatalf("wanted cat got %s", strdst)
+	}
+}
+
+func Test_UnMarshal_Int_Dst(t *testing.T) {
+	intdst := 0
+
+	if err := UnMarshal([]byte("i12222222e"), &intdst); err != nil {
+		t.Fatal(err.Error())
+	}
+
+	if intdst != 12222222 {
+		t.Fatalf("wanted 12222222 got %d", intdst)
 	}
 }
 
